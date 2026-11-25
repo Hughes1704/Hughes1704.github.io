@@ -2239,17 +2239,19 @@
               copyToClipboard("Christopher.reyesgomez2011@gmail.com");
             });
 
-          // Contact Form Validation & Confirmation
+          // Contact Form Validation & Real Submission (Web3Forms)
           document
             .getElementById("contact-form")
-            .addEventListener("submit", (e) => {
+            .addEventListener("submit", async (e) => {
               e.preventDefault();
               const name = document.getElementById("form-name").value.trim();
               const email = document.getElementById("form-email").value.trim();
+              const projectType = document.getElementById("form-type").value;
               const message = document
                 .getElementById("form-message")
                 .value.trim();
               const feedback = document.getElementById("form-feedback");
+              const submitBtn = e.target.querySelector('button[type="submit"]');
               const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
               if (!name || !emailPattern.test(email) || !message) {
@@ -2258,6 +2260,52 @@
                   "rounded-xl p-3.5 text-sm bg-rose-500/15 border border-rose-500/40 text-rose-200";
                 feedback.classList.remove("hidden");
                 return;
+              }
+
+              submitBtn.disabled = true;
+              submitBtn.classList.add("opacity-60", "cursor-not-allowed");
+
+              try {
+                const response = await fetch(
+                  "https://api.web3forms.com/submit",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                      access_key: "f27f1247-0e87-4737-9d99-dca96ddad050",
+                      subject: `New Portfolio Inquiry: ${projectType} — ${name}`,
+                      from_name: "Christopher Portfolio",
+                      name,
+                      email,
+                      projectType,
+                      message,
+                    }),
+                  },
+                );
+
+                const result = await response.json();
+                if (result.success) {
+                  feedback.textContent = i18n[currentLang]["form.success"];
+                  feedback.className =
+                    "rounded-xl p-3.5 text-sm bg-cyan-500/15 border border-cyan-500/40 text-cyan-200";
+                  e.target.reset();
+                } else {
+                  throw new Error(result.message || "Submission failed");
+                }
+              } catch (err) {
+                feedback.textContent =
+                  currentLang === "en"
+                    ? "Connection error. Please try again or use the direct email button."
+                    : "Error de conexión. Intenta de nuevo o usa el botón de correo directo.";
+                feedback.className =
+                  "rounded-xl p-3.5 text-sm bg-rose-500/15 border border-rose-500/40 text-rose-200";
+              } finally {
+                feedback.classList.remove("hidden");
+                submitBtn.disabled = false;
+                submitBtn.classList.remove("opacity-60", "cursor-not-allowed");
               }
 
               feedback.textContent = i18n[currentLang]["form.success"];
